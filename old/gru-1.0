@@ -1,0 +1,858 @@
+#! /usr/local/bin/bash
+#! /bin/bash
+
+HELP="Usage: $PROGRAM_NAME [OPTIONS] [--list-groups|--groups|--list-deps|--check_deps|--facets]
+Grovel through various system information and print out useful bits..
+
+    --debug                  Enable debug messages.
+    --help,       -h         Print this help screen.
+    --verbose,    -v         Print more details as the program runs.
+    --version,    -V         Print the version number.
+    --no-nodename -N         Don't print the nodename (we always do that by default)
+
+    These are the modes: pick ONE.
+    --facets                 List all facets provided on the command line. Default is ALL.
+                             This is the default mode.
+    --list-groups -G         List all the facet group names
+                             (all the different KINDS of facets)
+    --groups      -g         List all the facets in a group name -- can have multiple names
+    --list-deps              List all the programs this program relies upon to run.
+                             This mode doesn't actually run them - just a list.
+    --check-deps             Check to make sure all our dependancies are somewhere in our \$PATH.
+
+    These are the output formats: pick ONE.
+    --plain                  Output facets in plain text format in nice columns. DEFAULT.
+    --shell                  Output facets in KEY=\"value\" syntax compatible with shell.
+    --csv                    Output facets as comma seperated values format.
+
+Examples: 
+    TO BE WRITTEN
+"
+
+## To anyone reading this - I'm so sorry. I have much to answer for...
+## No, I can't program this well - I stole 70% of this from stack overflow
+
+## --------------------------- WARNING ------------------------
+# 
+# This script SUCKS. System programming at this level always does.
+# I should have written this as python
+# I should have written this as salt grains (maybe)
+# 
+# WATCH YOUR QUOTING. ITS REQUIRED IN THIS SCRIPT FAR MORE THAN USUAL 
+#  because we have a lot of spaces 
+#  because we have some strange chars (damn manufacturers)
+#  However, you _cant_ quote the regex itself in =~ -- use a var if needed...
+# 
+# DID IT BREAK? CHECK YOUR LAST CHANGE FOR LACK OF PROPER QUOTING - YOUVE BEEN WARNED!!
+
+## --------------------------- GLOBALS ------------------------
+## Global constants
+PROGRAM_NAME=${0##*/}
+VERSION=1.0
+
+## Global variables
+declare -A _CACHE       ## this is to efficiently cache all our discovered facts
+                        # if you get an error here, you probably have the wrong bash version
+                        # $ _CACHE[foo]=bar        # Put a value into an associative array
+                        # $ echo ${_CACHE[foo]}    # Get a value out of an associative array
+                        # ${_CACHE[generation]+_}  # test for existence of entry in array
+
+declare -a _DEP_LIST    # array of program we require to run correctly
+                        # unix standards like grep, sed, cut, tr will NOT appear here
+
+declare -A _FACETS      # This is the names of facets, grouped by type 
+
+declare -A _CMDLINE     # what we should be doing, based on our command line
+
+declare _CACHE_RETVAR   # Global cache return variable - for all cache functions.
+                        # allows us to still have a return code for if statements
+
+## --------------------------- BASIC RUNTIME DEPENDENCIES ------------------------
+if [[ $(uname) != "Linux" ]]; then
+    echo "ERROR: Only for linux yet."
+    exit 1
+fi
+if [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
+    # we need assoc arrays
+    # Yeah, I know I did the check after globals - so sue me.
+    echo "ERROR: Bash must be at least version 4"
+    exit 1
+fi
+if [[ $EUID -gt 0 ]] ; then
+    echo "ERROR: You need to be root"
+    exit 1
+fi
+
+
+## --------------------------------- DEBUG FUNCTIONS ------------------------
+# Says something when a freaking shell script needs debug functionality...
+debug() {
+
+    # WARNING: This function is super low level, so you must NOT touch globals
+    #          This means no regex matching for you!
+    local call_stack=($(caller 0))  # the extra parens makes an array variable...
+                                    # 0 = line number
+                                    # 1 = function name
+                                    # 2 = file name            
+
+    if [[ ${_CMDLINE[debug]} == "TRUE" ]] ; then
+        printf "DEBUG: ${call_stack[1]}():${call_stack[0]} $@ \n" >&2
+    fi
+
+}
+
+error() {
+    printf "ERROR: $@\n" >&2
+}
+
+## --------------------------------- CACHE FUNCTIONS ------------------------
+get_cache() {
+    if [[ ${_CACHE[$1]+_} ]] ; then
+        _CACHE_RETVAR="${_CACHE[$1]}"
+        return 0   # recall, in shell 0 = no error
+    else
+        _CACHE_RETVAR=""
+        return 1   # recall, in shell 1 = there was an error
+    fi
+}
+
+put_cache() {
+    _CACHE[$1]="$2"
+    return 0
+}
+
+        
+_dump_cache() {
+    for x in "${!_CACHE[@]}" ; do 
+        printf "[%q]=%q\n" "$x" "${_CACHE[$x]}" 
+    done
+}
+
+## --------------------------------- FACET SUPPORT FUNCTIONS ------------------------
+get_facet() {
+    # $1 is the name of the system facet we want
+    local facet="$1"
+    #debug1 "facet name is $facet"
+
+    if get_cache "$facet" ; then 
+        echo "$_CACHE_RETVAR"
+    else
+        # dang - do it the hard way...
+        func_name="get_${facet}"
+        #debug1 "func_name is $func_name"
+        value=$($func_name)
+        put_cache "$facet" "$value"
+        echo "$value"
+    fi
+}
+
+register_facet() {
+    _FACETS[$1]+=" $2"
+}
+
+## --------------------------------- DEPENDANCY FUNCTIONS ------------------------
+register_dependancy() {
+    # simple - just append it to our array of dependancies
+    _DEP_LIST+=($1)
+}
+
+uniqize_dependancies() {
+    # Duplicates are expected here - we only want the unique entries
+    # I wanted a general purpose array uniqizer - but ... daim bramage
+
+    declare -A uniq      ## assoc arrays are LOCAL by default
+
+    for i in "${_DEP_LIST[@]}" ; do 
+        uniq["$i"]=1
+    done
+
+    _DEP_LIST=($(printf '%s\n' "${!uniq[@]}"))
+}
+
+
+## --------------------------------- SUPPORT FUNCTIONS ------------------------
+ws_trim() {
+    local _result="$*"
+
+    #debug0 "before '$_result'"
+
+    # remove leading whitespace characters
+    _result="${_result#"${_result%%[![:space:]]*}"}"
+    # remove trailing whitespace characters
+    _result="${_result%"${_result##*[![:space:]]}"}"
+    #debug0 "after '$_result'"
+
+    echo "$_result"
+}
+
+to_upper() {
+    # simply uppercase our first argument
+    echo "${1^^}"
+}
+
+to_lower() {
+    # lowercase our first argument
+    echo "${1,,}"
+}
+
+colon_delimited_value() {
+    # I was trying to avoid naming this "get_value()" -- suggestions welcome
+
+    # Give a string of "something     : stuff:more:stuff:other_stuff"
+    # return everything AFTER the first :, not including that colon
+    # make sure this works when the value is a aa:bb:cc:dd:ee:ff style mac address
+    echo "${1#*:}"
+}
+
+normalize() {
+	# normalize -- remove leading and trailing whitespace and lowercase it.
+	# probably insufficient, but its a start
+    local _result
+
+    _result=$(ws_trim "$1")
+    _result=$(to_lower "$_result")
+
+    echo "$_result"
+}
+
+safe_read_file() {
+    if [[ -f $1 ]] ; then
+        echo "$(<$1)"
+    else
+        echo "UNKNOWN"
+    fi
+}
+
+## --------------------------------- CMDLINE FUNCTIONS ------------------------
+_dump_cmdline() {
+    debug "start _dump_cmdline"
+
+    for x in "${!_CMDLINE[@]}" ; do 
+        printf "[%q]=%q\n" "$x" "${_CMDLINE[$x]}" 
+    done
+
+    debug "end _dump_cmdline"
+
+}
+
+cmdline_parse() {
+
+    debug "start function"
+    _CMDLINE[debug]=FALSE
+    _CMDLINE[verbose]=FALSE
+    _CMDLINE[no_nodename]=FALSE
+    _CMDLINE[mode]="list_facets"   # our default mode
+                                   # list_groups | list_facets | list_deps | check_deps | list_group_names
+    _CMDLINE[list]=""              # blank here is synonymous with "ALL"
+    _CMDLINE[output]="plain"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+
+            --debug)
+                # FIXME: This needs to be levels
+                _CMDLINE[debug]="TRUE"
+                shift
+                ;;
+
+            --help|-h)
+                # // says do global search and replace...
+                HELP="${HELP//'$PROGRAM_NAME'/$PROGRAM_NAME}"
+                cat <<< "${HELP//'$VERSION'/$VERSION}"
+                exit 0
+                ;;
+            --verbose|-v)
+                _CMDLINE[verbose]="TRUE"
+                shift
+                ;;
+            --version|-V)
+                printf '%s version %s\n' "$PROGRAM_NAME" "$VERSION"
+                exit 0
+                ;;
+            --list-groups|-G)
+                _CMDLINE[mode]="list_group_names"
+                # _cmdline[list] isn't used - list_deps always implies all of them
+                shift
+                ;;
+            --group|-g)
+                _CMDLINE[mode]="list_groups"
+                debug "set model to list_groups"
+                shift
+                ;;
+            --all-facets|-A)
+                _CMDLINE[mode]="list_facets"
+                shift
+                ;;
+            --no-nodename|-N)
+                _CMDLINE[no_nodename]="TRUE"
+                shift
+                ;;
+            --list-deps)
+                _CMDLINE[mode]="list_deps"
+                # _cmdline[list] isn't used - list_deps always implies all of them
+                shift
+                ;;
+            --check-deps)
+                _CMDLINE[mode]="check_deps"
+                shift
+                ;;
+            --plain)
+                _CMDLINE[output]="plain"
+                shift
+                ;;
+            --shell)
+                _CMDLINE[output]="shell"
+                shift
+                ;;
+            --csv)
+                _CMDLINE[output]="csv"
+                shift
+                ;;
+            -*)
+                error "Invalid command line option '$1'. Try --help"
+                exit 1
+                ;;
+            *)
+                _CMDLINE[list]="${_CMDLINE[list]} $1"
+                shift 
+                ;;
+        esac
+    done
+
+    debug "start function"
+}
+
+
+## ------------------------------ SPECIAL FACET FUNCTIONS ---------------------
+# The nodename is special (to Hunter anyway ) and therefore NOT registered.
+# Its gets automatically added to ANY list of of facets UNLESS you tell the program not to.
+#register_facet nodename_ nodename
+get_nodename() {
+    echo "${HOSTNAME%%.*}"
+}
+
+register_facet special hw_id
+get_hw_id() {
+    # This is an old trick from amazon. The oem_id and the serial number are sufficient to identify
+    # any piece of hardware. (You need the oem_id because serial numbers DO overlap if the fleet
+    # is big enough)
+    local oem_id=$(get_facet oem_id)
+    local serial=$(get_facet dmi_serial)
+
+    hw_id=$(to_upper "${oem_id}-${serial}")
+
+    echo "$hw_id"
+}
+
+## ------------------------------ BMC FACET FUNCTIONS ---------------------
+register_facet bmc bmc_type
+get_bmc_type() {
+	# our $1 is the bmc vendor/manufacturer ID number
+	# (stupid vendors don't always set a name - "Unknown" is common - so I had to 
+	# switch to the id field)
+    local _result
+    local vendor=$(get_facet dmi_vendor) 
+
+	vendor=$(normalize "$vendor")
+    debug "vendor = $vendor"
+
+	case "$vendor" in 
+		(hp|11)
+			_result="ilo"
+			;;
+		(dell|674)
+			_result="drac"
+			;;
+		(supermicro|10876|47196|47488)
+			_result="sim"   # supermicro intelligent management  (dumb name)
+			;;
+		(unknown|0|*)
+			_result="unknown"
+			;;	
+	esac
+
+    echo "$_result"
+}
+
+
+register_dependancy ipmitool
+get_ipmitool_lan_print_() {
+    # Trailing underline means this is internal 
+    # cache_dump won't dump it...
+    
+    # this is solely to put it into the cache for later processing
+    # I'm probably over-optimizing this...
+    ipmitool lan print
+}
+
+register_dependancy ipmitool
+get_ipmitool_mc_info_() {
+    # Trailing underline means this is internal 
+    # cache_dump won't dump it...
+
+    # this is solely to put it into the cache for later processing
+    # I'm probably over-optimizing this...
+    ipmitool mc info
+}
+
+register_facet bmc bmc_ip_config
+get_bmc_ip_config() {
+    ipmitool_lan_print_=$(get_facet ipmitool_lan_print_)
+    ws_trim $(colon_delimited_value $(grep -e 'IP Address Source' <<< "$ipmitool_lan_print_"))
+}
+
+register_facet bmc bmc_ip_addr
+get_bmc_ip_addr() {
+
+    ipmitool_lan_print_="$(get_facet ipmitool_lan_print_)"
+    grep -e 'IP Address *:' <<< "$ipmitool_lan_print_" | cut -f2- -d:
+}
+
+register_facet bmc bmc_mac_addr
+get_bmc_mac_addr() {
+    ipmitool_lan_print_=$(get_facet ipmitool_lan_print_)
+    grep -e 'MAC Address' <<< "$ipmitool_lan_print_" | cut -f2- -d:
+}
+
+register_facet bmc bmc_fw_vers
+get_bmc_fw_vers() {
+    ipmitool_mc_info_=$(get_facet ipmitool_mc_info_)
+    grep -e 'Firmware Revision' <<< "$ipmitool_mc_info_" | cut -f2- -d:
+}
+
+register_facet bmc bmc_vendor_id
+get_bmc_vendor_id() {
+    ipmitool_mc_info_=$(get_facet ipmitool_mc_info_)
+    grep -e 'Manufacturer ID' <<< "$ipmitool_mc_info_" | cut -f2- -d:
+}
+
+
+## ------------------------------ HARDWARE GENERATION FACET FUNCTIONS ---------------------
+get_oem_generation_smc__() {        ## smc == supermicro
+    local _result 
+    local dmi_mb_model_=$(get_facet dmi_mb_model_)
+    debug "dmi_mb_model_ = $dmi_mb_model_"
+
+    # X=Intel, H=Amd, A=atom? 
+    # except there are X1 motherboards that are atom. 
+    # I'm supporting X?? and H?? and god help us with the rest
+    if [[ $dmi_mb_model_ =~ ^[XH]([0-9]+).*$ ]] ; then
+        generation="${BASH_REMATCH[1]}"
+        _result="$generation"
+    else
+        _result="unknown"
+    fi
+
+    echo "$_result"
+}
+
+get_oem_generation_dell__() {
+    # From https://www.dell.com/support/article/en-us/sln294897/
+    #              how-to-identify-which-generation-your-dell-poweredge-server-belongs-to?lang=en
+    local _result 
+    local model=$(get_facet dmi_model)
+
+    # capitalization can vary a lot - get rid of it.
+    model=$(normalize "$dmi_model")
+
+    # Basically, for a dell the generation is always the second NUMBER
+    if [[ $model =~ ^poweredge\ [a-z]*([0-9]+)$ ]] ; then 
+        ## new style (gen 10+)
+        numeric_model="${BASH_REMATCH[1]}"
+        generation_digit="${numeric_model:1:1}"
+        generation="1${generation_digit}"  # prepend a 1 to get "10th" etc
+        _result="$generation"
+    else
+        # old style (gen 1-9)
+        numeric_model="${BASH_REMATCH[1]}"
+        generation_digit="${numeric_model:1:1}"
+        generation="$generation_digit"    # no prepend, number = generation
+        _result="$generation"
+    fi
+
+    echo "$_result"
+}
+
+get_oem_generation_hpe__() {
+    # For HP's, the DMI "product name" (the model name/number) ends either in G# or Gen#
+    local _result
+    local model=$(get_facet dmi_model)
+
+    # capitalization can vary a lot - get rid of it.
+    model=$(normalize "$model")
+    debug "model = '$model'"
+
+    #[[ $TEST =~ ^(.*):\ +(.*)$ ]] && TEST=${BASH_REMATCH[1]}:${BASH_REMATCH[2]}
+    #    ProLiant DL385p Gen8   or ProLiant DL320 G6
+    if [[ $model =~ ^proliant.*g[a-z]*([0-9]*)$ ]] ; then
+        debug "regex match"
+        _result="${BASH_REMATCH[1]}"
+    else
+        debug "NO regex match"
+        _result="unknown"
+    fi
+
+    echo "$_result"
+}
+
+register_facet oem oem_generation
+get_oem_generation() {
+    # What "generation" of hardware? dell, smic, and hp at least all do this
+    # For (recent-ish) dell, its the 2nd digit of the model number.
+    # For supermicro, its the first "number" in the board name (X11DPH-T is a gen 11)
+    #         X = intel , H = amd
+    # For HP, its the "g" part of the product_name (DL 120 G7 == Generation 7)
+
+    local _result
+    local oem_id=$(get_facet oem_id)
+
+    case $oem_id in 
+        ("dell")
+            _result=$(get_oem_generation_dell__)
+            ;;
+        ("hpe")
+            _result=$(get_oem_generation_hpe__)
+            ;;
+        ("smc")
+            _result=$(get_oem_generation_smc__)
+            ;;
+        (*)
+            _result="unknown"
+    esac
+
+    echo "$_result"
+}
+
+register_facet oem oem_id
+get_oem_id() {
+    # oem id is defined as who made it (not who sold it) and normalized down to 
+    # lowercase, 3-4 letters. "Dell Inc." becomes "dell", "HP or HPE" becomes "hpe"
+    local _result
+    local dmi_manufacturer=$(get_facet dmi_manufacturer)
+
+    debug "dmi_manufacturer = $dmi_manufacturer"
+
+    case "$dmi_manufacturer" in
+        ("Dell inc.")
+            _result="dell"
+            ;;
+        ("HP"|"HPE")
+            _result="hpe"
+            ;;
+        ("Supermicro")
+            _result="smc" 
+            ;;
+         ("Default string"|"To Be Filled By O.E.M.")
+            # So far, all this crap hardware has ultimately been supermicro...
+            # if that changes, we're in trouble...
+            _result="smc" 
+            ;;
+         (*)
+            _result="unknown"
+            ;;
+     esac
+
+    echo "$_result"
+}
+
+## ------------------------------ OPERATING SYSTEM FACET FUNCTIONS ---------------------
+register_dependancy lsb_release
+register_facet os os_distro
+get_os_distro() {
+    lsb_release -i | cut -f2 -d: | tr [:upper:] [:lower:]
+}
+
+register_dependancy lsb_release
+register_facet os os_rel
+get_os_rel() {
+    lsb_release -r | cut -f2 -d: | tr [:upper:] [:lower:]
+}
+
+## ------------------------------ DMI FACET FUNCTIONS ---------------------
+register_facet dmi dmi_vendor
+get_dmi_vendor() {
+    safe_read_file /sys/devices/virtual/dmi/id/sys_vendor
+}
+
+register_facet dmi dmi_model
+get_dmi_model() {
+    safe_read_file /sys/devices/virtual/dmi/id/product_name
+}
+
+register_facet dmi dmi_serial
+get_dmi_serial() {
+    safe_read_file /sys/devices/virtual/dmi/id/product_serial
+}
+
+register_facet dmi dmi_uuid
+get_dmi_uuid() {
+    safe_read_file /sys/devices/virtual/dmi/id/product_uuid
+}
+
+register_facet dmi dmi_manufacturer
+get_dmi_manufacturer() {
+    safe_read_file /sys/devices/virtual/dmi/id/chassis_vendor    # grain of salt the size of vermont
+}
+
+register_facet dmi dmi_bios_version
+get_dmi_bios_version() {
+    safe_read_file /sys/devices/virtual/dmi/id/bios_version
+}
+
+register_facet dmi dmi_mb_model_
+get_dmi_mb_model_() {
+    # some internal tests need the motherboard name .... Clown Attack.
+    # https://www.supermicro.com/en/products/motherboards/matrix
+    safe_read_file /sys/devices/virtual/dmi/id/board_name
+}
+
+## ------------------------------ PHYSICAL FACET FUNCTIONS ---------------------
+register_dependancy uname
+register_facet phy phy_arch
+get_phy_arch() {
+
+    uname -m        # arch can come from many sources
+                    # lots of them conflict....
+                    # also, the os might (technically) be 32bit on 64 bit hardware.
+
+}
+
+register_dependancy dmidecode
+register_facet phy phy_ram
+get_phy_ram() {
+
+    # Everyone confuses this with free or /proc/meminfo
+    # thats the amount of _memory_ -IE, how much ram MINUS what the kernel eats.
+    # ram will always be an integer number (and these days in Gigabytes)
+    # memory will be something like 7.8GB on an 8GB system...
+    dmidecode -t 17 | grep "Size.*MB" | awk '{s+=$2} END {print s / 1024}'
+
+    ## Gabriel gets this:
+    #    egglestongc@hg-02127874-vl0> sudo dmidecode -t 17 | egrep "Size.*B"
+    #        Size: 8 GB
+
+}
+
+
+## --------------------------------- OUTPUT FUNCTIONS ------------------------
+output_facets_shell() {
+    # output a list of facets in shell compatible syntax -- FACET_NAME="value"
+
+    for facet in $* ; do
+        _output_facet_shell "$facet"
+    done
+}
+
+_output_facet_shell() {
+    # print a single facet in shell variable syntax
+    local key=$1
+    local value=$(get_facet $1)
+
+    key=$(to_upper "$key")
+    value=$(ws_trim "${value}")
+
+    debug "key = '$key'"
+    debug "value = '$value'"
+
+    echo $key=\"$value\"
+}
+
+output_facets_plain() {
+    for facet in $* ; do
+#        printf "%s\t%s\n" "$facet" "$(ws_trim $(get_facet $facet))"
+        printf "%s\t%s\n" "$facet" "$(get_facet $facet)"
+    done | column -ts $'\t'
+    # that insanity means to split on literal tab chars - bash SUCKS
+    # this isn't perfect -- improvements welcome
+}
+
+output_facets_csv() {
+    local values
+
+    if [[ ${_CMDLINE[verbose]} == TRUE ]] ; then
+        printf '%s\n' $* | paste -sd ','
+    fi
+
+    for facet in $* ; do
+#        printf "%s\n" "$(ws_trim $(get_facet $facet))"
+        printf "%s\n" "$(get_facet $facet)"
+    done | paste -sd ','
+
+}
+
+output_facets() {
+    # figure out what our output format should be, based on command line parameters.
+    case ${_CMDLINE[output]} in 
+        plain)
+            output_facets_plain $*
+            ;;
+        shell)
+            output_facets_shell $*
+            ;;
+        csv)
+            output_facets_csv $*
+            ;;
+        *)
+            error "internal error: command line output '${_CMDLINE[output]}' not recognized."
+            exit 1
+            ;;
+    esac
+}
+
+
+## ------------------------------ MAIN FUNCTIONS ---------------------------
+do_list_group_names() {
+    # just list the keys==type of facets a user can ask for.
+
+    for group in ${!_FACETS[@]} ; do
+        if [[ ${_CMDLINE[verbose]} == TRUE ]] ; then
+            echo "${group}: ${_FACETS[$group]}"
+        else
+            echo "$group"
+        fi
+    done
+
+}
+
+do_list_facets_by_groups() {
+
+    local groups 
+    local output_list
+    local candidate
+
+    debug "start function"
+
+    if [[ ${_CMDLINE[no_nodename]} != TRUE ]] ; then
+        # logic is convoluted, but thats the command line for you
+        output_list="nodename"
+    fi
+
+    debug "groups == '$groups'"
+    for group in ${_CMDLINE[list]} ; do
+        debug "group name is $group"
+        debug "group list is ${_FACETS[$group]}"
+        for candidate in ${_FACETS[$group]} ; do
+            if [[ ($candidate == *_) && ${_CMDLINE[verbose]} != TRUE  ]] ; then
+                # facet names that end with _ are 'internal' and should only be printed if verbose is on
+                continue
+            fi
+            output_list="${output_list} ${candidate}"
+        done
+    done
+    
+    # actually do the outputing
+    output_facets $output_list
+
+    debug "end function"
+
+}
+
+do_list_facets() {
+
+    local facets
+    local groups
+
+    debug "start function"
+
+    if [[ ${_CMDLINE[list]} == "" ]] ; then
+        debug "doing ALL facets path"
+
+        # print out all the groups
+        _CMDLINE[list]="${!_FACETS[@]}"
+        do_list_facets_by_groups 
+
+    else
+        debug "doing facets list path"
+        # we do NOT check for internal facet here - if the user specified them, we output them
+        output_facets ${_CMDLINE[list]}
+    fi
+
+    debug "end function"
+
+}
+
+do_list_deps() {
+
+    debug "start function"
+
+    uniqize_dependancies
+
+    for dep in ${_DEP_LIST[@]}; do
+        echo "$dep"
+    done
+    debug "end function"
+}
+
+do_check_deps() {
+
+    debug "start function"
+    uniqize_dependancies
+
+    for dep in ${_DEP_LIST[@]}; do
+        # we're bash, and /bin/which is a dumpster fire so...
+        loc=$(type -P $dep)
+        if [[ $loc ]] ; then
+            echo "SUCCESS: $dep found at $loc"
+        else
+            error "$dep not found in \$PATH"
+        fi
+
+    done
+    debug "end function"
+
+}
+
+do_main() {
+
+    # Parse our command line options and args
+    cmdline_parse "$@"
+    if [[ ${_CMDLINE[debug]} == TRUE ]] ; then
+        _dump_cmdline
+    fi
+
+    # Based on that, what should we be doing?
+    case ${_CMDLINE[mode]} in
+        list_group_names)
+            do_list_group_names
+            ;;
+        list_groups)
+            do_list_facets_by_groups
+            ;;
+        list_facets)
+            do_list_facets
+            ;;
+        list_deps)
+            do_list_deps
+            ;;
+        check_deps)
+            do_check_deps
+            ;;
+        *)
+            error "internal error: command line mode '${_CMDLINE[mode]}' not recognized."
+            exit 1
+            ;;
+    esac
+
+
+
+}
+
+# actually call main and like ... do something
+do_main "$@"
+
+## END OF LINE ##
+
+##
+## BUG / FIX LIST
+##
+# FIXED:   if /sys file doesn't exist, we screw up.
+# BUG:   Need error checking on bad facet names
+# BUG:   phy_ram() has a bug on certain systems - G reported it.
+# BUG:   -g with a bogus group name SHOULD generate an error...
+# FIXED: should have some way (trailing _ ) to elide back room facets (bmc_vendor_id)  
+# BUG:   -g special causes nodename to be printed twice...
+#        -g special --no-nodename ... fixes it. Is this a bug? I can't tell anymore.
+# 
+# TODO:  COLORS!!!
+
+
