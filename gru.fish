@@ -9,8 +9,7 @@ Options:
 "
 set -g _PROGRAM (status basename)
 set -g _VERSION "1.2"
-set -g ATTRS 
-
+set -g ATTRS
 
 # For all of dots, this is correct - my code, my rules.
 function fish_command_not_found
@@ -27,7 +26,7 @@ function panic
 end
 
 function main
-    argparse --name $_PROGRAM debug h/help version test= -- $argv
+    argparse --name $_PROGRAM debug h/help version mock= -- $argv
     or begin
         echo $_HELP
         exit 1
@@ -51,17 +50,17 @@ function main
         panic "Only for x86_64 yet."
     end
 
-    if test $_flag_test
-        echo "test: $argv"
-        set -g TEST $_flag_test
-        exit 0
+    if set -q $_flag_mock
+        # we're mocking, so there better be a mock data dir around somewhere
+        set -g MOCK (status dirname)/mock_data/$_flag_mock
+        if not test -d $MOCK
+            panic "$_flag_mock directory $MOCK does not exist"
+        end
     end
 
     # todo section
     echo "todo: check minimum version requirement - v4.0"
     echo "todo: set pragma to remove ? from globbing"
-
-    # Do stuff here
 
 end
 
