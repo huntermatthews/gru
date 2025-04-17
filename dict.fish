@@ -12,7 +12,7 @@ function __dict_usage
     echo "dict contains [-k|--key] [-v|--value] [-i|--index] [DICTNAME] [STRING]"
 end
 
-function __dict_check_dictname -a dictname
+function __dict_check_dictname --no-scope-shadowing -a dictname
     # Check to see that the DICTNAME provided is a valid variable.
     if not set -q -- $dictname
         echo >&2 "dict: Bad DICTNAME. Variable not found: '$dictname'."
@@ -138,5 +138,11 @@ function dict \
         case '*'
             echo >&2 "dict: Subcommand not found '$subcommand'."
             return 2
+    end
+end
+
+function dict_return
+    for arg in $argv
+        echo $arg
     end
 end
