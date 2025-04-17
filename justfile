@@ -12,7 +12,15 @@ build:
     echo "Building GRU..."
     echo "#!/usr/bin/env fish" > gru
     # This order is IMPORTANT - there are dependancies in the code for order!
-    for f in debug.fish boolean.fish output.fish dict.fish requires.fish strings.fish gru.fish
+    for f in \
+        debug.fish \
+        boolean.fish \
+        errors.fish \
+        dict.fish \
+        conversions.fish \
+        sources.fish \
+        readers.fish \
+        gru.fish
         #echo "Adding $f to GRU..."
         cat $f >> gru
     end
