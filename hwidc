@@ -34,8 +34,12 @@ FILES=(
 PROGRAMS=(
 "dmidecode -t memory"
 lsblk
+lsmem
+lscpu
+lspci
 "ip addr"
-fstab
+"udevadm info -e | grep MEMORY"
+"uname  -snrmp"
 )
 
 # abort on nonzero exit status, unbound variables, or errors inside pipes
@@ -110,10 +114,8 @@ collect_uname() {
     # TODO: this needs to be all? chars and capture errors to ONE file.
     for opt in a b i K m n o p r s U v ;
     do
-        echo "uname -${opt}" $(uname -${opt})
+        echo "uname -${opt} $(uname -${opt} 2>&1)" >> "$WORK_DIR"/_programs/uname-opts
     done
-
-    uname -a > "$WORK_DIR"/_programs/uname
 
 }
 
