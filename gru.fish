@@ -11,25 +11,19 @@ set -g _PROGRAM (status basename)
 set -g _VERSION "1.2"
 set -g ATTRS
 
-# For all of dots, this is correct - my code, my rules.
-function fish_command_not_found
-    exit 12
-end
-
-function panic
-    if set -q FLAG_DEBUG; and test "$FLAG_DEBUG" = true
-        status stack-trace
-    end
-
-    echo "FATAL: $argv"
-    exit 1
-end
-
 function main
-    argparse --name $_PROGRAM debug h/help version mock= -- $argv
+    argparse --name $_PROGRAM h/help version debug mock= -- $argv
     or begin
         echo $_HELP
         exit 1
+    end
+
+    if set -q _flag_debug
+        if test (count $_flag_debug) -gt 1
+            set -g _debug trace
+        else
+            set -g _debug debug
+        end
     end
 
     if set -q _flag_help
@@ -42,25 +36,46 @@ function main
         exit 0
     end
 
-    if test (uname) != Linux
-        panic "Only for linux yet."
-    end
-
-    if test (uname -m) != x86_64
-        panic "Only for x86_64 yet."
-    end
-
-    if set -q $_flag_mock
+    if set -q _flag_mock
         # we're mocking, so there better be a mock data dir around somewhere
+
+        # TODO: we might want the fully qualified path here
         set -g MOCK (status dirname)/mock_data/$_flag_mock
         if not test -d $MOCK
             panic "$_flag_mock directory $MOCK does not exist"
         end
+        debug_var MOCK
+    else
+        if test (uname) != Linux
+            debug "uname: $(uname)"
+            panic "Only for Linux yet."
+        end
+
+        if test (uname -m) != x86_64
+            debug "uname -m: $(uname -m)"
+            panic "Only for x86_64 yet."
+        end
     end
 
     # todo section
-    echo "todo: check minimum version requirement - v4.0"
-    echo "todo: set pragma to remove ? from globbing"
+    # "todo: check minimum version requirement - v4.0"
+    # "todo: set pragma to remove ? from globbing"
+
+    # Call upon our sources to gather information
+    source_uname
+    source_virt_what
+    source_os_release
+    if test (dict get ATTRS phy.platform) = physical
+        # DMI is basically useless for non-physical systems
+        source_sys_dmi
+    end
+    source_udevadm_ram
+    source_lscpu
+
+    for key in (string collect (dict keys ATTRS) | sort )
+        set value (dict get ATTRS $key)
+        echo "$key: $value"
+    end
 
 end
 
