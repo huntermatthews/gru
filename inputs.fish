@@ -168,3 +168,18 @@ function input_selinux
 
     trace (status function) end
 end
+
+# Data about gru itself (metadata)
+function input_gru
+    trace (status function) begin
+
+    dict set ATTRS gru.binary (path resolve (status current-filename))
+    dict set ATTRS gru.version $_VERSION
+    dict set ATTRS gru.version_info (string replace '.' ' ' $_VERSION)
+    dict set ATTRS gru.fish.binary (status fish-path)
+    dict set ATTRS gru.fish.version $version
+    dict set ATTRS gru.debug_mode (debug_state status)
+    dict set ATTRS gru.path $PATH
+
+    trace (status function) end
+end

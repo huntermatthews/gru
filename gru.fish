@@ -72,7 +72,9 @@ function main
     input_udevadm_ram
     input_lscpu
     input_selinux
+    input_gru
 
+    # Now do some output
     for key in (string collect (dict keys ATTRS) | sort )
         set value (dict get ATTRS $key)
         echo "$key: $value"
