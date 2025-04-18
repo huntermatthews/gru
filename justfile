@@ -18,7 +18,7 @@ build:
         errors.fish \
         dict.fish \
         conversions.fish \
-        sources.fish \
+        inputs.fish \
         readers.fish \
         gru.fish
         #echo "Adding $f to GRU..."

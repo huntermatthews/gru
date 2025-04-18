@@ -1,6 +1,6 @@
 ## -*- mode: fish -*- ##
 
-function source_os_release
+function input_os_release
     trace (status function) begin
 
     set data (read_file "/etc/os-release")
@@ -24,7 +24,7 @@ function source_os_release
     trace (status function) end
 end
 
-function source_uname
+function input_uname
     trace (status function) begin
 
     set keys os.kernel.name os.hostname os.kernel.version phy.arch.name phy.arch.family
@@ -45,7 +45,7 @@ function source_uname
     trace (status function) end
 end
 
-function source_sys_dmi
+function input_sys_dmi
     trace (status function) begin
 
     set keys dmi.vendor dmi.model.family dmi.product.name dmi.product.serial dmi.product.uuid
@@ -67,7 +67,7 @@ function source_sys_dmi
     trace (status function) end
 end
 
-function source_udevadm_ram
+function input_udevadm_ram
     trace (status function) begin
 
     set data (read_program "udevadm" "info" "-e" )
@@ -87,7 +87,7 @@ function source_udevadm_ram
     trace (status function) end
 end
 
-function source_virt_what
+function input_virt_what
     trace (status function) begin
 
     set data (read_program "virt-what" )
@@ -104,7 +104,7 @@ function source_virt_what
     trace (status function) end
 end
 
-function source_lscpu
+function input_lscpu
     trace (status function) begin
 
     # map the regex to the field name

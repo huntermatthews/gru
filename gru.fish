@@ -62,15 +62,15 @@ function main
     # "todo: set pragma to remove ? from globbing"
 
     # Call upon our sources to gather information
-    source_uname
-    source_virt_what
-    source_os_release
+    input_uname
+    input_virt_what
+    input_os_release
     if test (dict get ATTRS phy.platform) = physical
         # DMI is basically useless for non-physical systems
-        source_sys_dmi
+        input_sys_dmi
     end
-    source_udevadm_ram
-    source_lscpu
+    input_udevadm_ram
+    input_lscpu
 
     for key in (string collect (dict keys ATTRS) | sort )
         set value (dict get ATTRS $key)
