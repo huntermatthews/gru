@@ -71,6 +71,7 @@ function main
     end
     input_udevadm_ram
     input_lscpu
+    input_selinux
 
     for key in (string collect (dict keys ATTRS) | sort )
         set value (dict get ATTRS $key)

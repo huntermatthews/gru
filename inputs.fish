@@ -156,3 +156,15 @@ function input_lscpu
 
     trace (status function) end
 end
+
+function input_selinux
+    trace (status function) begin
+
+    set data (read_program "getenforce")
+    debug_var_list data
+
+    dict set ATTRS os.selinux.enable UNKNOWN
+    dict set ATTRS os.selinux.mode $data
+
+    trace (status function) end
+end
