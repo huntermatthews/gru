@@ -7,6 +7,38 @@
 ## Future Code
 
 ```shell
+# Converts bytes value to human-readable string [$1: bytes value]
+bytesToHumanReadable() {
+    local i=${1:-0} d="" s=0 S=("Bytes" "KiB" "MiB" "GiB" "TiB" "PiB" "EiB" "YiB" "ZiB")
+    while ((i > 1024 && s < ${#S[@]}-1)); do
+        printf -v d ".%02d" $((i % 1024 * 100 / 1024))
+        i=$((i / 1024))
+        s=$((s + 1))
+    done
+    echo "$i$d ${S[$s]}"
+}
+
+to_bytes() {
+    value=$(echo "$1" | sed 's/[^0123456789].*$//g')
+    units=$(echo "$1" | sed 's/^[0123456789]*//g' | tr '[:upper:]' '[:lower:]')
+
+    case "$units" in
+        t|tb)   let 'value *= 1024 * 1024 * 1024 * 1024'    ;;
+        g|gb)   let 'value *= 1024 * 1024 * 1024'   ;;
+        m|mb)   let 'value *= 1024 * 1024'  ;;
+        k|kb)   let 'value *= 1024' ;;
+        b|'')   let 'value += 0'    ;;
+        *)
+                value=
+                echo "Unsupported units '$units'" >&2
+        ;;
+    esac
+
+    echo "$value"
+}
+```
+
+```shell
 #
 # written by Dennis Williamson 2010-12-09
 # for https://stackoverflow.com/questions/4399475/unformat-disk-size-strings
@@ -113,3 +145,71 @@ x86_64
 [USERNAME@<host1>]~% uname -o
 GNU/Linux
 ```
+
+```shell
+dehumanise() {
+  for v in "${@:-$(</dev/stdin)}"
+  do  
+    echo $v | awk \
+      'BEGIN{IGNORECASE = 1}
+       function printpower(n,b,p) {printf "%u\n", n*b^p; next}
+       /[0-9]$/{print $1;next};
+       /K(iB)?$/{printpower($1,  2, 10)};
+       /M(iB)?$/{printpower($1,  2, 20)};
+       /G(iB)?$/{printpower($1,  2, 30)};
+       /T(iB)?$/{printpower($1,  2, 40)};
+       /KB$/{    printpower($1, 10,  3)};
+       /MB$/{    printpower($1, 10,  6)};
+       /GB$/{    printpower($1, 10,  9)};
+       /TB$/{    printpower($1, 10, 12)}'
+  done
+} 
+
+```
+
+```shell
+#!/bin/bash
+
+declare -A s=([Y]=24 [Z]=21 [E]=18 [P]=15 [T]=12 [G]=9 [M]=6 [K]=3)
+
+input="$1"
+suffix="${input: -1}"
+number="${input:0: -1}"
+
+printf "%.0f bytes\n" "${number}e+${s[$suffix]}"
+
+#!/bin/bash
+
+declare -A s=([P]=50 [T]=40 [G]=30 [M]=20 [K]=10)
+
+input="$1"
+suffix="${input: -1}"
+number="${input:0: -1}"
+d=$(printf "%.0f" "${number}e+2")
+
+printf "%d bytes\n" "$(( d * 2 ** s["$suffix"] / 100 ))"
+```
+
+```shell
+awk 'function human(x) {
+         s=" B   KiB MiB GiB TiB EiB PiB YiB ZiB"
+         while (x>=1024 && length(s)>1) 
+               {x/=1024; s=substr(s,5)}
+         s=substr(s,1,4)
+         xf=(s==" B  ")?"%5d   ":"%8.2f"
+         return sprintf( xf"%s\n", x, s)
+      }
+      {gsub(/^[0-9]+/, human($1)); print}'
+
+ awk '
+    function human(x) {
+        if (x<1000) {return x} else {x/=1024}
+        s="kMGTEPZY";
+        while (x>=1000 && length(s)>1)
+            {x/=1024; s=substr(s,2)}
+        return int(x+0.5) substr(s,1,1)
+    }
+    {sub(/^[0-9]+/, human($1)); print}'
+
+```
+
