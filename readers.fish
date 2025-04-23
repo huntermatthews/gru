@@ -47,7 +47,7 @@ function read_program
         cat $fname
     else
 
-        if not command -v $p_name
+        if not command -v $p_name >/dev/null
             panic "program `$p_name` not found in PATH"
         end
 
