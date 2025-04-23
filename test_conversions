@@ -1,0 +1,26 @@
+#! /usr/bin/env fish
+
+source debug.fish
+source conversions.fish 
+
+echo "Testing conversions"
+debug_state off
+
+si_to_bytes "1024"
+si_to_bytes "1024.0"
+si_to_bytes "1023 KB"
+si_to_bytes "325MB"
+si_to_bytes "650 GB"
+si_to_bytes "650 XB"
+si_to_bytes "650 X"
+
+bytes_to_si "24"
+bytes_to_si "10"
+bytes_to_si "1024"
+bytes_to_si "1024.0"
+bytes_to_si "1047552"
+bytes_to_si "340787200"
+bytes_to_si "340737200"
+bytes_to_si "697932185600"
+
+echo "Ending Testing conversions"
