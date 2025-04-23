@@ -1,13 +1,15 @@
 ## -*- mode: fish -*- ##
 
+set -g _PROGRAM (status basename)
+
 set -g _HELP "
-Usage: $(status basename) [OPTIONS] [FILE]
+Usage: $_PROGRAM [OPTIONS] [FILE]
 Options:
   -h, --help      Show this help message and exit
   -v, --version   Show version information and exit
     other docs later
 "
-set -g _PROGRAM (status basename)
+
 set -g _VERSION "1.2"
 set -g ATTRS
 

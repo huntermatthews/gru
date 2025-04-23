@@ -33,7 +33,11 @@ function input_uname
 
     # The order back from uname is fixed (at least on Linux and MacOS) so this is safe
     if test (count $keys) -ne (count $data)
-        panic "$(status function): keys and data length don't match: You can't count"
+        debug count keys (count $keys)
+        debug count data (count $data)
+        debug_var keys
+        debug_var data
+        panic (status function): keys and data length don't match: You can't count
     end
 
     for idx in (seq (count $data))
@@ -52,7 +56,11 @@ function input_sys_dmi
     set entries sys_vendor product_family product_name product_serial product_uuid
 
     if test (count $keys) -ne (count $entries)
-        panic "$(status function): keys and data length don't match: You can't count"
+        debug count keys (count $keys)
+        debug count data (count $entries)
+        debug_var keys
+        debug_var entries
+        panic (status function): keys and entries length don't match: You can't count
     end
 
     for idx in (seq (count $keys))
