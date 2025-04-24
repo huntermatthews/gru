@@ -52,8 +52,8 @@ end
 function input_sys_dmi
     trace (status function) begin
 
-    set keys dmi.vendor dmi.model.family dmi.product.name dmi.product.serial dmi.product.uuid
-    set entries sys_vendor product_family product_name product_serial product_uuid
+    set keys sys.vendor sys.model.family sys.model.name sys.serial_no sys.uuid sys.oem sys.asset_no
+    set entries sys_vendor product_family product_name product_serial product_uuid chassis_vendor chassis_asset_tag
 
     if test (count $keys) -ne (count $entries)
         debug count keys (count $keys)
