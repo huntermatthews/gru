@@ -50,11 +50,13 @@ function main
         debug_var MOCK
     else
         if test (uname) != Linux
+            # FIXME: not 3.3 compatible
             debug "uname: $(uname)"
             panic "Only for Linux yet."
         end
 
         if test (uname -m) != x86_64
+            # FIXME: not 3.3 compatible
             debug "uname -m: $(uname -m)"
             panic "Only for x86_64 yet."
         end
@@ -69,7 +71,7 @@ function main
     input_virt_what
     input_os_release
     if test (dict get ATTRS phy.platform) = physical
-        # DMI is basically useless for non-physical systems
+        # DMI is basically meaningless for non-physical systems
         input_sys_dmi
     end
     input_udevadm_ram
