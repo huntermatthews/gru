@@ -12,6 +12,7 @@ Options:
 
 set -g _VERSION "1.2"
 set -g ATTRS
+set -g _CMDLINE $argv
 
 function main
     argparse --name $_PROGRAM h/help version debug mock= -- $argv

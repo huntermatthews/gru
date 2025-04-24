@@ -188,6 +188,7 @@ function input_gru
     dict set ATTRS gru.fish.version $version
     dict set ATTRS gru.debug_mode (debug_state status)
     dict set ATTRS gru.path $PATH
+    dict set ATTRS gru.cmdline $_CMDLINE
 
     trace (status function) end
 end
