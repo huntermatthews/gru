@@ -12,10 +12,10 @@ Options:
 
 set -g _VERSION "1.2"
 set -g ATTRS
-set -g _CMDLINE $argv
+set -g _CMDLINE $argv      # save this for gru.cmdline later
 
 function main
-    argparse --name $_PROGRAM h/help version debug mock= -- $argv
+    argparse --name $_PROGRAM h/help version debug mock= output= -- $argv
     or begin
         echo $_HELP
         exit 1
@@ -61,7 +61,7 @@ function main
             panic "Only for x86_64 yet."
         end
     end
-
+    
     # todo section
     # "todo: check minimum version requirement - v4.0"
     # "todo: set pragma to remove ? from globbing"
@@ -79,10 +79,16 @@ function main
     input_selinux
     input_gru
 
-    # Now do some output
-    for key in (string collect (dict keys ATTRS) | sort )
-        set value (dict get ATTRS $key)
-        echo "$key: $value"
+    switch $_flag_output
+        case 'dots'
+            output_dots
+        # case 'json'
+        #     output_json
+        case 'shell'
+            output_shell
+        case '*'
+            # default to dots
+            output_dots
     end
 
 end

@@ -20,6 +20,7 @@ build:
         conversions.fish \
         inputs.fish \
         readers.fish \
+        outputs.fish \
         gru.fish
         #echo "Adding $f to GRU..."
         cat $f >> gru
