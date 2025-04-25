@@ -27,18 +27,7 @@ end
 function output_json
     trace (status function) begin
 
-    set json (string collect (dict keys ATTRS) | sort )
-    set json (string replace --all ' ' ':' $json)
-    set json (string replace --all '.' '_' $json)
-    set json (string replace --all '\n' ',' $json)
-    set json (string replace --all ',' ',\n' $json)
-    set json (string replace --all ':' ': ' $json)
-    set json (string replace --all '{' '{\n' $json)
-    set json (string replace --all '}' '\n}' $json)
-
-    echo "$json"
+    #    https://stackoverflow.com/questions/48470049/build-a-json-string-with-bash-variables
 
     trace (status function) end
 end
-
-
