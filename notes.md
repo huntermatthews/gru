@@ -4,8 +4,6 @@
 
 - Fish DOES require all functions to be defined before they are called.
 
-
-
 ## DMIdecode Notes
 
 ```shell
@@ -64,4 +62,21 @@ x86_64
 x86_64
 [USERNAME@<host1>]~% uname -o
 GNU/Linux
+```
+
+```shell
+if [[ ! -f /usr/bin/salt-minion ]] ; then
+ /bin/echo "CRITICAL - salt-minion not installed"
+ exit 2
+elif [[ -f /no_salt ]]; then
+ /bin/echo "WARNING - SaltStack disabled since at least $(stat --format %y /no_salt)"
+ exit 1
+elif [[ $(stat --format %y /var/cache/salt/minion/highstate.cache.p | date -f - +%s) -lt $(date -d "24 hours ago" +%s) ]]; then
+    # FIXME: possibly explore salt-run or salt.modules.state methods to review when salt last ran
+ /bin/echo "WARNING - SaltStack has not run for at least 24 hours - last run $(stat /var/cache/salt/minion/highstate.cache.p --format %y)"
+ exit 1
+elif [[ $(stat --format %y /var/cache/salt/minion/highstate.cache.p | date -f - +%s) -gt $(date -d "24 hours ago" +%s) ]]; then
+ /bin/echo "OK - SaltStack running"
+ exit 0
+fi
 ```
