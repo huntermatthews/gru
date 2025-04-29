@@ -41,24 +41,24 @@ function main
 
     if set -q _flag_mock
         # we're mocking, so there better be a mock data dir around somewhere
-
-        # TODO: we might want the fully qualified path here
         set -g MOCK (status dirname)/mock_data/$_flag_mock
         if not test -d $MOCK
             panic "$_flag_mock directory $MOCK does not exist"
         end
         debug_var MOCK
     else
-        if test (uname) != Linux
-            # FIXME: not 3.3 compatible
-            debug "uname: $(uname)"
+        # todo: fleet is mostly fish v3.3, so we can't use "$(cmd)" yet
+        set kernel_name (uname)
+        if test $kernel_name != "Linux"
+            debug "uname: $uname"
             panic "Only for Linux yet."
         end
 
-        if test (uname -m) != x86_64
-            # FIXME: not 3.3 compatible
-            debug "uname -m: $(uname -m)"
-            panic "Only for x86_64 yet."
+        # todo: fleet is mostly fish v3.3, so we can't use "$(cmd)" yet
+        set arch (uname -m)
+        if contains $arch x86_64 amd64 
+            debug "uname -m: $(arch)"
+            panic "Only for x86_64/amd64 yet."
         end
     end
     
