@@ -46,20 +46,6 @@ function main
             panic "$_flag_mock directory $MOCK does not exist"
         end
         debug_var MOCK
-    else
-        # todo: fleet is mostly fish v3.3, so we can't use "$(cmd)" yet
-        set kernel_name (uname)
-        if test $kernel_name != "Linux"
-            debug "uname: $uname"
-            panic "Only for Linux yet."
-        end
-
-        # todo: fleet is mostly fish v3.3, so we can't use "$(cmd)" yet
-        set arch (uname -m)
-        if contains $arch x86_64 amd64 
-            debug "uname -m: $(arch)"
-            panic "Only for x86_64/amd64 yet."
-        end
     end
     
     # todo section
@@ -68,6 +54,9 @@ function main
 
     # Call upon our sources to gather information
     input_uname
+
+    
+    os.kernel.name
     input_virt_what
     input_os_release
     if test (dict get ATTRS phy.platform) = physical

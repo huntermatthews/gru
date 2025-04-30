@@ -192,3 +192,33 @@ function input_gru
 
     trace (status function) end
 end
+
+function input_sw_vers
+    # ProductName:		macOS
+    # ProductVersion:	15.3.2
+    # BuildVersion:		24D81
+
+    trace (status function) begin
+
+    set data (read_program "sw_vers")
+    debug_var_list data
+
+    for line in $data
+        set key (string split --fields 1 --max 1 ":" $line | string trim --chars '" ')
+        set value (string split --fields 2 --max 1 ":" $line | string trim --chars '" ')
+        debug_var key
+        debug_var value
+
+        switch $key
+            case ProductName
+                dict set ATTRS os.name $value
+            case ProductVersion
+                dict set ATTRS os.version $value
+            case BuildVersion
+                dict set ATTRS os.build $value
+        end
+
+    end
+
+    trace (status function) end
+end
