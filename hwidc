@@ -34,7 +34,7 @@ FILES=(
 PROGRAMS=(
 "dmidecode -t memory"
 lsblk
-lsmem
+"lsmem --summary --bytes"
 lscpu
 lspci
 "ip addr"
