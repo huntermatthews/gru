@@ -204,8 +204,8 @@ function input_sw_vers
     debug_var_list data
 
     for line in $data
-        set key (string split --fields 1 --max 1 ":" $line | string trim --chars '" ')
-        set value (string split --fields 2 --max 1 ":" $line | string trim --chars '" ')
+        set key (string split --fields 1 --max 1 ":" $line | string trim)
+        set value (string split --fields 2 --max 1 ":" $line | string trim)
         debug_var key
         debug_var value
 
