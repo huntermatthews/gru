@@ -21,6 +21,7 @@ build:
         inputs.fish \
         readers.fish \
         outputs.fish \
+        os.fish \
         gru.fish
         #echo "Adding $f to GRU..."
         cat $f >> gru

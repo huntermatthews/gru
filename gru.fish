@@ -47,27 +47,20 @@ function main
         end
         debug_var MOCK
     end
-    
-    # todo section
-    # "todo: check minimum version requirement - v4.0"
-    # "todo: set pragma to remove ? from globbing"
 
-    # Call upon our sources to gather information
-    input_uname
+    # yeah, we run uname twice - the split is in case we're in --mock mode
+    set kernel_name (read_program "uname" | string split --fields 1 ' ' )
+    debug_var kernel_name
 
-    
-    os.kernel.name
-    input_virt_what
-    input_os_release
-    if test (dict get ATTRS phy.platform) = physical
-        # DMI is basically meaningless for non-physical systems
-        input_sys_dmi
+    switch $kernel_name
+        case Darwin
+            os_darwin
+        case Linux
+            os_linux
+        case *
+            os_unsupported
     end
-    input_udevadm_ram
-    input_lscpu
-    input_selinux
-    input_gru
-
+    
     switch $_flag_output
         case 'dots'
             output_dots
