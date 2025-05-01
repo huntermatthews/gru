@@ -222,3 +222,29 @@ function input_sw_vers
 
     trace (status function) end
 end
+
+function input_macos_name
+    trace (status function) begin
+
+    set major_ver (dict get ATTRS os.version | string split --fields 1 '.' | string trim)
+    debug_var major_ver
+
+    switch $major_ver
+        case 15
+            set code_name "Sequoia"
+        case 14
+            set code_name "Sonoma"
+        case 13
+            set code_name "Ventura"
+        case 12
+            set code_name "Monterey"
+        case 11
+            set code_name "Big Sur"
+        # Before that, we have to deal with more complicated veersion parsing - and its old.
+    end
+
+    dict set ATTRS os.code_name $code_name
+
+    trace (status function) end
+end
+
