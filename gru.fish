@@ -57,16 +57,12 @@ function main
             os_darwin
         case Linux
             os_linux
+            # os_test
         case *
             os_unsupported
     end
-    
     switch $_flag_output
-        case 'dots'
             output_dots
-        # case 'json'
-        #     output_json
-        case 'shell'
             output_shell
         case '*'
             # default to dots

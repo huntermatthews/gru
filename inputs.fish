@@ -79,10 +79,18 @@ function input_udevadm_ram
     trace (status function) begin
 
     set data (read_program "udevadm" "info" "-e" )
-    debug_var_list data
+    trace_var_list data
 
-    set sizes (string match --regex --groups-only 'MEMORY_DEVICE_\d+_SIZE=(\d+)' $data)
-    debug_var sizes
+    # FIXME: this is much easier with --groups-only, but we don't have that in fish v3.3
+    set raw_sizes (string match --regex 'MEMORY_DEVICE_\d+_SIZE=(\d+)' $data)
+    # raw_sizes == '17179869184 17179869184 17179869184 17179869184' with --groups-only
+    # raw_sizes == 'MEMORY_DEVICE_0_SIZE=17179869184 17179869184 MEMORY_DEVICE_1_SIZE=17179869184 17179869184 MEMORY_DEVICE_8_SIZE=17179869184 17179869184 MEMORY_DEVICE_9_SIZE=17179869184 17179869184'
+    debug_var_list raw_sizes
+    set max (count $raw_sizes)
+    for i in (seq 2 2 $max)
+        set --append sizes $raw_sizes[$i]
+    end
+    debug_var_list sizes
 
     set total (math (string join '+' $sizes ))
     debug_var total
@@ -118,12 +126,12 @@ function input_lscpu
     # map the regex to the field name
     # the regex is the key, the field name is the value
     set regexes \
-        '^ *Model name: *(.+)' model \
-        '^ *Vendor ID: *(.+)' vendor \
-        '^ *Core\(s\) per socket: *(\d+)' cores_per_socket \
-        '^ *Thread\(s\) per core: *(\d+)' threads_per_core \
-        '^ *Socket\(s\): *(\d+)' sockets \
-        '^ *CPU\(s\): *(\d+)' cpus
+        '^ *Model name: *(?<value>.+)' model \
+        '^ *Vendor ID: *(?<value>.+)' vendor \
+        '^ *Core\(s\) per socket: *(?<value>\d+)' cores_per_socket \
+        '^ *Thread\(s\) per core: *(?<value>\d+)' threads_per_core \
+        '^ *Socket\(s\): *(?<value>\d+)' sockets \
+        '^ *CPU\(s\): *(?<value>\d+)' cpus
 
     # stores the data we get back from the regex matching, using the field names above
     set fields
@@ -141,7 +149,9 @@ function input_lscpu
     #    debug_var_list data
 
     for regex in (dict keys regexes)
-        set value (string match --regex --groups-only $regex $data)
+        # FIXME: this is much easier with --groups-only, but we don't have that in fish v3.3
+        # Cheat -these regex only yield one value, so we can use the named capture groups.
+        set rvalue (string match --regex $regex $data)
         debug_var value
 
         dict set fields (dict get regexes $regex) $value
@@ -181,7 +191,8 @@ end
 function input_gru
     trace (status function) begin
 
-    dict set ATTRS gru.binary (path resolve (status current-filename))
+    # FIXME: was "path resolve", but we don't have that in fish v3.3
+    dict set ATTRS gru.binary (realpath (status current-filename))
     dict set ATTRS gru.version $_VERSION
     dict set ATTRS gru.version_info (string replace '.' ' ' $_VERSION)
     dict set ATTRS gru.fish.binary (status fish-path)
@@ -231,20 +242,19 @@ function input_macos_name
 
     switch $major_ver
         case 15
-            set code_name "Sequoia"
+            set code_name Sequoia
         case 14
-            set code_name "Sonoma"
+            set code_name Sonoma
         case 13
-            set code_name "Ventura"
+            set code_name Ventura
         case 12
-            set code_name "Monterey"
+            set code_name Monterey
         case 11
             set code_name "Big Sur"
-        # Before that, we have to deal with more complicated veersion parsing - and its old.
+            # Before that, we have to deal with more complicated veersion parsing - and its old.
     end
 
     dict set ATTRS os.code_name $code_name
 
     trace (status function) end
 end
-

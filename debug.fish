@@ -7,7 +7,8 @@ set -g _debug off
 
 function debug_state
     # This function is used to set the debug state.
-    argparse --name (status basename) --min-args 1 --max-args 1 -- $argv
+    # Fake is fake argument to let this be compatible with fish v3.3
+    argparse --name (status basename) --min-args 1 --max-args 1 fake -- $argv
     or begin
         exit 1
     end
