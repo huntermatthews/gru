@@ -33,6 +33,15 @@ function os_linux
     trace (status function) end
 end
 
+function os_test
+    trace (status function) begin
+
+    input_udevadm_ram
+    input_lscpu
+
+    trace (status function) end
+end
+
 function os_unsupported
     trace (status function) begin
 
