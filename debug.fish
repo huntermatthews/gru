@@ -70,3 +70,20 @@ function trace
         echo "TRACE: $argv" 1>&2
     end
 end
+
+# PATH and other vars that are typically (longer) lists are hard to read with just debug_var
+# This function will print out the variable name, and then each index of the variable on a new line.
+function trace_var_list -S
+    # The -S is magic that allows this debug function to peer into other functions private variables...
+    if test "$_debug" = trace
+        set -l count (count $$argv[1])
+        if test $count -eq 0
+            echo "TRACE: variable `$argv[1]` of length $count == '$$argv[1]'" 1>&2
+        else
+            echo "TRACE: variable `$argv[1]` of length $count:" 1>&2
+            for i in (seq (count $$argv[1]))
+                echo "     trace: index: $i, Value: $$argv[1][$i]" 1>&2
+            end
+        end
+    end
+end
