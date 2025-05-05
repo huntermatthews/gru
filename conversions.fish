@@ -23,6 +23,7 @@ end
 # for https://stackoverflow.com/questions/4399475/unformat-disk-size-strings
 # written by Dennis Williamson 2010-12-09
 # ported (fish) by Hunter Matthews 2025-04-22
+function si_to_bytes -a size
 
     set units K M G T P E # kilo, mega, giga, tera, peta, exa
     set size (string upper $size)
@@ -45,6 +46,4 @@ end
 
     printf "%u\n" (math "$number * 1024 ^ $exponent")
 end
-
-
 

@@ -61,12 +61,17 @@ function main
         case *
             os_unsupported
     end
+    
     switch $_flag_output
-            output_dots
-            output_shell
-        case '*'
-            # default to dots
-            output_dots
+    case 'dots'
+        output_dots
+    # case 'json'
+    #     output_json
+    case 'shell'
+        output_shell
+    case '*'
+        # default to dots
+        output_dots
     end
 
 end
