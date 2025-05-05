@@ -106,12 +106,16 @@ end
 function input_virt_what
     trace (status function) begin
 
-    set data (read_program "virt-what" )
+    set data (read_program2 "virt-what" )
+    if test $status -eq 1
+        # error running virt-what, so we can't assume anything
+        dict set ATTRS phy.platform "UNKNOWN"
+        return 1
+    end    
     debug_var_list data
 
     if test -z "$data"
-        # no output generally means bare-metal HOWEVER
-        # BUG: we aren't checking the rc like we should!
+        # no output generally means bare-metal
         set data physical
     end
 
