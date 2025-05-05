@@ -28,6 +28,7 @@ function os_linux
     input_udevadm_ram
     input_lscpu
     input_selinux
+    input_no_salt
     input_gru
 
     trace (status function) end
