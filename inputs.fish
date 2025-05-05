@@ -109,9 +109,9 @@ function input_virt_what
     set data (read_program2 "virt-what" )
     if test $status -eq 1
         # error running virt-what, so we can't assume anything
-        dict set ATTRS phy.platform "UNKNOWN"
+        dict set ATTRS phy.platform UNKNOWN
         return 1
-    end    
+    end
     debug_var_list data
 
     if test -z "$data"
@@ -266,39 +266,24 @@ end
 function input_no_salt
     trace (status function) begin
 
-    set data (read_file2 "/no_salt" | string split --max 3 -- ' - ' )
+    set data (read_file2 "/no_salt" )
     if test $status -eq 1
         # no_salt file doesn't exist, so we get any data
-        dict set ATTRS salt.no_salt.exists "false"
-        return 0 
+        dict set ATTRS salt.no_salt.exists false
+        return 0
     else
         debug_var_list data
-        dict set ATTRS salt.no_salt.exists true   
+        dict set ATTRS salt.no_salt.exists true
     end
-    
+
     if test -z "$data"
         # no data generally means a screw up
-        dict set ATTRS salt.no_salt.creator UNKNOWN
-        dict set ATTRS salt.no_salt.date UNKNOWN
         dict set ATTRS salt.no_salt.reason UNKNOWN
         return 1
-    end
-
-    set keys salt.no_salt.creator salt.no_salt.date salt.no_salt.reason
-
-    if test (count $keys) -ne (count $data)
-        debug count keys (count $keys)
-        debug count data (count $data)
-        debug_var keys
-        debug_var data
-        panic (status function): "keys and data length don't match: You can't count"
-    end
-
-    for idx in (seq (count $data))
-        debug_var keys[$idx]
-        debug_var data[$idx]
-        dict set ATTRS $keys[$idx] $data[$idx]
+    else
+        # we have data, so we can set the reason
+        dict set ATTRS salt.no_salt.reason $data
     end
 
     trace (status function) end
-end   
+end
