@@ -12,7 +12,13 @@ Options:
 
 set -g _VERSION "1.2"
 set -g ATTRS
-set -g _CMDLINE $argv      # save this for gru.cmdline later
+set -g _CMDLINE $argv # save this for gru.cmdline later
+
+# Outside of main - so that really old argparse's don't bomb us out.
+set vers_info (string split -- '.' $FISH_VERSION)
+if test $vers_info[1] -lt 3 -o \( $vers_info[1] = 3 -a $vers_info[2] -lt 3 \)
+    panic "Fish Version '$FISH_VERSION' is too old - please upgrade"
+end
 
 function main
     argparse --name $_PROGRAM h/help version debug mock= output= -- $argv
@@ -61,17 +67,17 @@ function main
         case *
             os_unsupported
     end
-    
+
     switch $_flag_output
-    case 'dots'
-        output_dots
-    # case 'json'
-    #     output_json
-    case 'shell'
-        output_shell
-    case '*'
-        # default to dots
-        output_dots
+        case dots
+            output_dots
+            # case 'json'
+            #     output_json
+        case shell
+            output_shell
+        case '*'
+            # default to dots
+            output_dots
     end
 
 end
