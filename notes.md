@@ -127,6 +127,8 @@ fi
 
 ### Bash
 
+<https://github.com/Ariel-Rodriguez/sh-semversion-2>
+
 ```shell
 #!/bin/bash
 vercomp () {
