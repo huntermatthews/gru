@@ -16,7 +16,9 @@ end
 function os_linux
     trace (status function) begin
 
+    # If we get "Linux" as as the kernel name, then by defn the os.name is Linux
     dict set ATTRS os.name Linux
+
     input_uname
     input_virt_what
     input_os_release
