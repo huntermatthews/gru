@@ -11,7 +11,6 @@ function os_darwin
     input_macos_name
     input_gru
 
-    trace (status function) end
 end
 
 function os_linux
@@ -31,7 +30,6 @@ function os_linux
     input_no_salt
     input_gru
 
-    trace (status function) end
 end
 
 function os_test
@@ -40,7 +38,6 @@ function os_test
     input_udevadm_ram
     input_lscpu
 
-    trace (status function) end
 end
 
 function os_unsupported
@@ -48,5 +45,4 @@ function os_unsupported
 
     panic "Unsupported OS"
 
-    trace (status function) end
 end

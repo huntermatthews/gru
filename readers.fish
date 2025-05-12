@@ -18,7 +18,6 @@ function read_file -a fname
 
     cat $fname
 
-    trace (status function) end
 end
 
 function read_file2 -a fname
@@ -39,7 +38,6 @@ function read_file2 -a fname
 
     cat $fname
 
-    trace (status function) end
 end
 
 function read_program
@@ -76,7 +74,6 @@ function read_program
 
     end
 
-    trace (status function) end
 end
 
 function read_program2
@@ -117,6 +114,5 @@ function read_program2
         set rc $status
     end
 
-    trace (status function) end
     return $rc
 end

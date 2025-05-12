@@ -8,7 +8,6 @@ function output_dots
         echo "$key: $value"
     end
 
-    trace (status function) end
 end
 
 function output_shell
@@ -21,7 +20,6 @@ function output_shell
         echo "$key_var='$value'"
     end
 
-    trace (status function) end
 end
 
 function output_json
@@ -29,5 +27,4 @@ function output_json
 
     #    https://stackoverflow.com/questions/48470049/build-a-json-string-with-bash-variables
 
-    trace (status function) end
 end

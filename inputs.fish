@@ -21,7 +21,6 @@ function input_os_release
 
     end
 
-    trace (status function) end
 end
 
 function input_uname
@@ -46,7 +45,6 @@ function input_uname
         dict set ATTRS $keys[$idx] $data[$idx]
     end
 
-    trace (status function) end
 end
 
 function input_sys_dmi
@@ -72,7 +70,6 @@ function input_sys_dmi
         dict set ATTRS $key $data
     end
 
-    trace (status function) end
 end
 
 function input_udevadm_ram
@@ -100,7 +97,6 @@ function input_udevadm_ram
 
     dict set ATTRS phy.ram.size $bytes
 
-    trace (status function) end
 end
 
 function input_virt_what
@@ -121,7 +117,6 @@ function input_virt_what
 
     dict set ATTRS phy.platform $data
 
-    trace (status function) end
 end
 
 function input_lscpu
@@ -176,7 +171,6 @@ function input_lscpu
         dict set ATTRS phy.cpu.$key $value
     end
 
-    trace (status function) end
 end
 
 function input_selinux
@@ -188,7 +182,6 @@ function input_selinux
     dict set ATTRS os.selinux.enable UNKNOWN
     dict set ATTRS os.selinux.mode $data
 
-    trace (status function) end
 end
 
 # Data about gru itself (metadata)
@@ -205,7 +198,6 @@ function input_gru
     dict set ATTRS gru.path $PATH
     dict set ATTRS gru.cmdline $_CMDLINE
 
-    trace (status function) end
 end
 
 function input_sw_vers
@@ -235,7 +227,6 @@ function input_sw_vers
 
     end
 
-    trace (status function) end
 end
 
 function input_macos_name
@@ -260,7 +251,6 @@ function input_macos_name
 
     dict set ATTRS os.code_name $code_name
 
-    trace (status function) end
 end
 
 function input_no_salt
@@ -285,5 +275,4 @@ function input_no_salt
         dict set ATTRS salt.no_salt.reason $data
     end
 
-    trace (status function) end
 end
