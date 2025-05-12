@@ -102,7 +102,7 @@ end
 function input_virt_what
     trace (status function) begin
 
-    set data (read_program2 "virt-what" )
+    set data (read_program "virt-what" )
     if test $status -eq 1
         # error running virt-what, so we can't assume anything
         dict set ATTRS phy.platform UNKNOWN
@@ -256,7 +256,7 @@ end
 function input_no_salt
     trace (status function) begin
 
-    set data (read_file2 "/no_salt" )
+    set data (read_file "/no_salt" )
     if test $status -eq 1
         # no_salt file doesn't exist, so we get any data
         dict set ATTRS salt.no_salt.exists false
