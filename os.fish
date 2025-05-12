@@ -37,8 +37,7 @@ end
 function os_test
     trace (status function) begin
 
-    input_udevadm_ram
-    input_lscpu
+    input_selinux
 
 end
 

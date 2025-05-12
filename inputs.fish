@@ -176,10 +176,15 @@ end
 function input_selinux
     trace (status function) begin
 
+    if read_program selinuxenabled # selinuxenabled ONLY sets RC - there's no output to capture
+        dict set ATTRS os.selinux.enable true
+    else
+        dict set ATTRS os.selinux.enable false
+    end
+
     set data (read_program "getenforce")
     debug_var_list data
 
-    dict set ATTRS os.selinux.enable UNKNOWN
     dict set ATTRS os.selinux.mode $data
 
 end
@@ -268,11 +273,10 @@ function input_no_salt
 
     if test -z "$data"
         # no data generally means a screw up
-        dict set ATTRS salt.no_salt.reason UNKNOWN
-        return 1
-    else
-        # we have data, so we can set the reason
-        dict set ATTRS salt.no_salt.reason $data
+        set data UNKNOWN
     end
+
+    # we have data, so we can set the reason
+    dict set ATTRS salt.no_salt.reason $data
 
 end
