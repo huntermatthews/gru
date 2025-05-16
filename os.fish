@@ -26,6 +26,10 @@ function os_linux
         # DMI is meaningless for non-physical systems
         input_sys_dmi
     end
+    if contains (dict get ATTRS phy.arch.name) x86_64 amd64
+        # x86_64 is the same as amd64
+        input_cpuinfo_flags
+    end
     input_udevadm_ram
     input_lscpu
     input_selinux

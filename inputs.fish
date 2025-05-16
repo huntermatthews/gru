@@ -173,6 +173,61 @@ function input_lscpu
 
 end
 
+# support function for input_cpuinfo_flags
+# string split --no-empty ' '
+function __has_flags
+    trace (status function) begin
+        set check_flags (string split --no-empty ' ' $argv[1])
+        set all_flags (string split --no-empty ' ' $argv[2])
+        debug count is (count $argv)
+        debug_var check_flags
+        debug_var all_flags
+
+        for flag in $check_flags
+            if not contains $flag $all_flags
+                # we don't have all the flags we need
+                return 1
+            end
+        end
+
+    trace (status function) end
+    return 0
+
+end
+
+# Note: this is only valid for x86_64/amd64 cpus.
+function input_cpuinfo_flags
+    trace (status function) begin
+
+    set vers[1] "lm cmov cx8 fpu fxsr mmx syscall sse2"
+    set vers[2] "cx16 lahf_lm popcnt sse4_1 sse4_2 ssse3"
+    set vers[3] "avx avx2 bmi1 bmi2 f16c fma abm movbe xsave"
+    set vers[4] "avx512f avx512bw avx512cd avx512dq avx512vl"
+
+    set data (read_file "/proc/cpuinfo")
+    trace_var_list data
+
+    set cpu_flags (string match --entire --max-matches 1 'flags' $data \
+        | string split --fields 2 ':')
+    debug_var_list cpu_flags
+
+    # all x86_64 cpus are at least version 0
+    set cpu_version 0 
+
+    for idx in (seq (count $vers))
+        if __has_flags $vers[$idx] $cpu_flags
+            # we have all the flags for this version
+            set cpu_version (math $cpu_version + 1)
+        else
+            break
+        end
+    end
+
+    debug_var idx
+    dict set ATTRS phy.cpu.arch_version x86_64_v$cpu_version
+
+end
+
 function input_selinux
     trace (status function) begin
 
