@@ -39,7 +39,7 @@ lscpu
 lspci
 "ip addr"
 "udevadm info -e | grep MEMORY"
-"uname  -snrmp"
+"uname -snrmp"
 )
 
 # abort on nonzero exit status, unbound variables, or errors inside pipes
@@ -150,3 +150,8 @@ create_archive
 
 # Final cleanup
 cleanup_workdir
+
+## TODO:
+# convert from bash to (posix) sh
+# file, programs, DIRS and if a program  returns !0, record that as a _rc file
+# need to figure out multiple calls to same program problem (uname + uname -snrmp; ip will likely have 2-3)
