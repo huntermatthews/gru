@@ -21,7 +21,7 @@ if test $vers_info[1] -lt 3 -o \( $vers_info[1] = 3 -a $vers_info[2] -lt 3 \)
 end
 
 function main
-    argparse --name $_PROGRAM h/help version debug mock= output= -- $argv
+    argparse --name $_PROGRAM h/help version debug mock= output= collector -- $argv
     or begin
         echo $_HELP
         exit 1
@@ -54,6 +54,12 @@ function main
         debug_var MOCK
     end
 
+    if set -q _flag_collector
+        trace "Calling Collector..."
+        collector
+        exit 0
+    end
+
     # yeah, we run uname twice - the split is in case we're in --mock mode
     set kernel_name (read_program "uname" | string split --fields 1 ' ' )
     debug_var kernel_name
@@ -62,8 +68,8 @@ function main
         case Darwin
             os_darwin
         case Linux
-            os_linux
-            # os_test
+            # os_linux
+            os_test
         case *
             os_unsupported
     end

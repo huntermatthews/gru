@@ -11,7 +11,7 @@ build:
     #! /usr/bin/env fish
     echo "Building GRU..."
     echo "#!/usr/bin/env fish" > gru
-    # This order is IMPORTANT - there are dependancies in the code for order!
+    # This order is IMPORTANT - debug, errors, dict, then anything else, gru(main) last
     for f in \
         debug.fish \
         boolean.fish \
@@ -21,9 +21,9 @@ build:
         inputs.fish \
         readers.fish \
         outputs.fish \
+        collector.fish \
         os.fish \
         gru.fish
-        #echo "Adding $f to GRU..."
         cat $f >> gru
     end
     chmod +x gru

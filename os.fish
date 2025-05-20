@@ -41,7 +41,7 @@ end
 function os_test
     trace (status function) begin
 
-    input_selinux
+    collector
 
 end
 
