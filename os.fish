@@ -9,6 +9,7 @@ function os_darwin
     input_uname
     input_sw_vers
     input_macos_name
+    input_uptime
     input_gru
 
 end
@@ -34,6 +35,7 @@ function os_linux
     input_lscpu
     input_selinux
     input_no_salt
+    input_uptime
     input_gru
 
 end
@@ -41,7 +43,7 @@ end
 function os_test
     trace (status function) begin
 
-    collector
+    input_uptime
 
 end
 

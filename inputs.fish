@@ -335,3 +335,34 @@ function input_no_salt
     dict set ATTRS salt.no_salt.reason $data
 
 end
+
+# 09:06:29 up 1 day, 5 hours, 28 minutes 1 user load average: 0.00, 0.00, 0.00
+# caution: linux has args to JUST give us the uptime, but we don't have that in macos 
+function input_uptime
+    trace (status function) begin
+
+    set data (read_program "uptime" )
+    debug_var data
+
+    # FIXME: this is much easier with --groups-only, but we don't have that in fish v3.3
+    string match --regex '.* up (?<uptime>.*) \d+ user.*' $data > /dev/null
+    set uptime (string trim  --right --chars , $uptime)
+    debug_var uptime
+
+    dict set ATTRS run.uptime $uptime
+
+end
+
+# 350735.47 234388.90
+function input_proc_uptime
+    trace (status function) begin
+
+    set data (read_file "/proc/uptime" )
+    debug_var data
+
+    set uptime_secs (string split --fields 1 --max 1 " " $data)
+    debug_var uptime_secs
+
+    dict set ATTRS run.uptime $uptime_secs
+
+end
