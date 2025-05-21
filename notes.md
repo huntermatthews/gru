@@ -224,7 +224,7 @@ echo "$flags" | eval $supports_v3 || exit 3 && echo "CPU supports x86-64-v3"
 echo "$flags" | eval $supports_v4 || exit 4 && echo "CPU supports x86-64-v4"
 ```
 
-### or 
+### or
 
 ```shell
 #!/bin/sh
