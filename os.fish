@@ -43,7 +43,7 @@ end
 function os_test
     trace (status function) begin
 
-    input_uptime
+    input_ip_addr_show
 
 end
 

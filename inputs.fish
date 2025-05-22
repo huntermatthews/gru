@@ -177,18 +177,18 @@ end
 # string split --no-empty ' '
 function __has_flags
     trace (status function) begin
-        set check_flags (string split --no-empty ' ' $argv[1])
-        set all_flags (string split --no-empty ' ' $argv[2])
-        debug count is (count $argv)
-        debug_var check_flags
-        debug_var all_flags
+    set check_flags (string split --no-empty ' ' $argv[1])
+    set all_flags (string split --no-empty ' ' $argv[2])
+    debug count is (count $argv)
+    debug_var check_flags
+    debug_var all_flags
 
-        for flag in $check_flags
-            if not contains $flag $all_flags
-                # we don't have all the flags we need
-                return 1
-            end
+    for flag in $check_flags
+        if not contains $flag $all_flags
+            # we don't have all the flags we need
+            return 1
         end
+    end
 
     trace (status function) end
     return 0
@@ -212,7 +212,7 @@ function input_cpuinfo_flags
     debug_var_list cpu_flags
 
     # all x86_64 cpus are at least version 0
-    set cpu_version 0 
+    set cpu_version 0
 
     for idx in (seq (count $vers))
         if __has_flags $vers[$idx] $cpu_flags
@@ -337,7 +337,7 @@ function input_no_salt
 end
 
 # 09:06:29 up 1 day, 5 hours, 28 minutes 1 user load average: 0.00, 0.00, 0.00
-# caution: linux has args to JUST give us the uptime, but we don't have that in macos 
+# caution: linux has args to JUST give us the uptime, but we don't have that in macos
 function input_uptime
     trace (status function) begin
 
@@ -345,7 +345,7 @@ function input_uptime
     debug_var data
 
     # FIXME: this is much easier with --groups-only, but we don't have that in fish v3.3
-    string match --regex '.* up (?<uptime>.*) \d+ user.*' $data > /dev/null
+    string match --regex '.* up (?<uptime>.*) \d+ user.*' $data >/dev/null
     set uptime (string trim  --right --chars , $uptime)
     debug_var uptime
 
@@ -364,5 +364,13 @@ function input_proc_uptime
     debug_var uptime_secs
 
     dict set ATTRS run.uptime $uptime_secs
+
+end
+
+function input_ip_addr_show
+    trace (status function) begin
+
+    set data (read_program "ip" "addr" )
+    debug_var_list data
 
 end

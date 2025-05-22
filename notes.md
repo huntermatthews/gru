@@ -3,6 +3,8 @@
 ## Code Notes
 
 - Fish DOES require all functions to be defined before they are called.
+- Fish supports nested functions (private functions?)
+
 
 ## DMIdecode Notes
 
@@ -208,114 +210,8 @@ testvercomp 1 1 '>'
  mdls -raw -name kMDItemVersion /Applications/Firefox.app/
 ```
 
-## x86_64 version checking
+## Ip Addresses
 
-```shell
-#!/bin/sh -eu
+### Things to look for
 
-flags=$(cat /proc/cpuinfo | grep flags | head -n 1 | cut -d: -f2)
-
-supports_v2='awk "/cx16/&&/lahf/&&/popcnt/&&/sse4_1/&&/sse4_2/&&/ssse3/ {found=1} END {exit !found}"'
-supports_v3='awk "/avx/&&/avx2/&&/bmi1/&&/bmi2/&&/f16c/&&/fma/&&/abm/&&/movbe/&&/xsave/ {found=1} END {exit !found}"'
-supports_v4='awk "/avx512f/&&/avx512bw/&&/avx512cd/&&/avx512dq/&&/avx512vl/ {found=1} END {exit !found}"'
-
-echo "$flags" | eval $supports_v2 || exit 2 && echo "CPU supports x86-64-v2"
-echo "$flags" | eval $supports_v3 || exit 3 && echo "CPU supports x86-64-v3"
-echo "$flags" | eval $supports_v4 || exit 4 && echo "CPU supports x86-64-v4"
-```
-
-### or
-
-```shell
-#!/bin/sh
-set -e
-
-verbose=
-while getopts v OPTLET; do
-  case "$OPTLET" in
-    v) verbose=1;;
-    \?) exit 2;;
-  esac
-done
-
-flags=$(grep '^flags\b' </proc/cpuinfo | head -n 1)
-flags=" ${flags#*:} "
-
-has_flags () {
-  for flag; do
-    case "$flags" in
-      *" $flag "*) :;;
-      *)
-        if [ -n "$verbose" ]; then
-          echo >&2 "Missing $flag for the next level"
-        fi
-        return 1;;
-    esac
-  done
-}
-
-determine_level () {
-  level=0
-  has_flags lm cmov cx8 fpu fxsr mmx syscall sse2 || return 0
-  level=1
-  has_flags cx16 lahf_lm popcnt sse4_1 sse4_2 ssse3 || return 0
-  level=2
-  has_flags avx avx2 bmi1 bmi2 f16c fma abm movbe xsave || return 0
-  level=3
-  has_flags avx512f avx512bw avx512cd avx512dq avx512vl || return 0
-  level=4
-}
-
-determine_level
-echo "$level"
-```
-
-```shell
-#!/usr/bin/awk -f
-
-BEGIN {
-    # Collect CPU features from lscpu
-    cmd = "lscpu | grep 'Flags:' | awk '{for (i=2; i<=NF; i++) print $i}'"
-    while (cmd | getline) {
-        features = features " " $0
-    }
-    close(cmd)
-
-    # Define required features for each x86-64-v level
-    levels[1] = "lm cmov cx8 fpu fxsr mmx syscall sse2"
-    levels[2] = "cx16 lahf_lm popcnt sse4_1 sse4_2 ssse3"
-    levels[3] = "avx avx2 bmi1 bmi2 f16c fma abm movbe xsave"
-    levels[4] = "avx512f avx512bw avx512cd avx512dq avx512vl"
-
-    level = 0
-    missing = ""
-
-    # Check features for each level
-    for (i = 1; i <= 4; i++) {
-        level_met = 1
-        split(levels[i], flags, " ")
-        missing = ""
-        for (j in flags) {
-            if (features !~ flags[j]) {
-                missing = missing flags[j] " "
-                level_met = 0
-            }
-        }
-        if (level_met == 1) {
-            level = i
-        } else {
-            print "Current level: x86-64-v" level
-            print "Missing for x86-64-v" i ": " missing
-            exit i
-        }
-    }
-
-    # Report the highest supported level
-    print "Current level: x86-64-v" level
-    exit level + 1
-}
-```
-
-```shell
-/usr/lib/ld-linux-x86-64.so.2 --help
-'''
+- interface number, name, state (up/down) mac address, ipv4 addr, ipv6 address, aliases, mtu
