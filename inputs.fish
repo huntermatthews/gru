@@ -1,5 +1,8 @@
 ## -*- mode: fish -*- ##
 
+function requires_os_release
+    echo file:/etc/os-release
+end
 function input_os_release
     trace (status function) begin
 
@@ -23,6 +26,9 @@ function input_os_release
 
 end
 
+function requires_uname
+    echo prog:uname
+end
 function input_uname
     trace (status function) begin
 
@@ -47,6 +53,10 @@ function input_uname
 
 end
 
+function requires_sys_dmi
+    echo dir:/sys/devices/virtual/dmi/id
+
+end
 function input_sys_dmi
     trace (status function) begin
 
@@ -72,6 +82,9 @@ function input_sys_dmi
 
 end
 
+function requires_udevadm_ram
+    echo prog:udevadm
+end
 function input_udevadm_ram
     trace (status function) begin
 
@@ -99,6 +112,9 @@ function input_udevadm_ram
 
 end
 
+function requires_virt_what
+    echo prog:virt-what
+end
 function input_virt_what
     trace (status function) begin
 
@@ -119,6 +135,9 @@ function input_virt_what
 
 end
 
+function requires_lscpu
+    echo prog:lscpu
+end
 function input_lscpu
     trace (status function) begin
 
@@ -173,8 +192,6 @@ function input_lscpu
 
 end
 
-# support function for input_cpuinfo_flags
-# string split --no-empty ' '
 function __has_flags
     trace (status function) begin
     set check_flags (string split --no-empty ' ' $argv[1])
@@ -195,7 +212,9 @@ function __has_flags
 
 end
 
-# Note: this is only valid for x86_64/amd64 cpus.
+function requires_cpuinfo_flags
+    echo file:/proc/cpuinfo
+end
 function input_cpuinfo_flags
     trace (status function) begin
 
@@ -228,6 +247,9 @@ function input_cpuinfo_flags
 
 end
 
+function requires_selinux
+    echo prog:selinuxenabled prog:getenforce
+end
 function input_selinux
     trace (status function) begin
 
@@ -244,7 +266,9 @@ function input_selinux
 
 end
 
-# Data about gru itself (metadata)
+function requires_gru
+    echo
+end
 function input_gru
     trace (status function) begin
 
@@ -260,6 +284,9 @@ function input_gru
 
 end
 
+function requires_sw_vers
+    echo prog:sw_vers
+end
 function input_sw_vers
     # ProductName:		macOS
     # ProductVersion:	15.3.2
@@ -289,6 +316,9 @@ function input_sw_vers
 
 end
 
+function requires_macos_name
+    echo
+end
 function input_macos_name
     trace (status function) begin
 
@@ -313,6 +343,9 @@ function input_macos_name
 
 end
 
+function requires_no_salt
+    echo file:/no_salt
+end
 function input_no_salt
     trace (status function) begin
 
@@ -336,9 +369,12 @@ function input_no_salt
 
 end
 
-# 09:06:29 up 1 day, 5 hours, 28 minutes 1 user load average: 0.00, 0.00, 0.00
-# caution: linux has args to JUST give us the uptime, but we don't have that in macos
+function requires_uptime
+    echo prog:uptime
+end
 function input_uptime
+    # 09:06:29 up 1 day, 5 hours, 28 minutes 1 user load average: 0.00, 0.00, 0.00
+    # caution: linux has args to JUST give us the uptime, but we don't have that in macos
     trace (status function) begin
 
     set data (read_program "uptime" )
@@ -353,8 +389,11 @@ function input_uptime
 
 end
 
-# 350735.47 234388.90
+function requires_proc_uptime
+    echo file:/proc/uptime
+end
 function input_proc_uptime
+    # 350735.47 234388.90
     trace (status function) begin
 
     set data (read_file "/proc/uptime" )
@@ -367,7 +406,10 @@ function input_proc_uptime
 
 end
 
-function input_ip_addr_show
+function requires_ip_addr
+    echo prog:ip prog:jq
+end
+function input_ip_addr
     trace (status function) begin
 
     set data (read_program "ip" "addr" )

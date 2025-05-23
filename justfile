@@ -22,6 +22,7 @@ build:
         readers.fish \
         outputs.fish \
         collector.fish \
+        requires.fish \
         os.fish \
         gru.fish
         cat $f >> gru

@@ -21,7 +21,7 @@ if test $vers_info[1] -lt 3 -o \( $vers_info[1] = 3 -a $vers_info[2] -lt 3 \)
 end
 
 function main
-    argparse --name $_PROGRAM h/help version debug mock= output= collector -- $argv
+    argparse --name $_PROGRAM h/help version debug mock= output= R/check-requires L/list-requires collector -- $argv
     or begin
         echo $_HELP
         exit 1
@@ -64,14 +64,26 @@ function main
     set kernel_name (read_program "uname" | string split --fields 1 ' ' )
     debug_var kernel_name
 
+    if set -q _flag_check_requires
+        trace "Calling check_requires..."
+        check_requires
+        exit 0
+    end
+
+    if set -q _flag_list_requires
+        trace "Calling list_requires..."
+        list_requires
+        exit 0
+    end
+
     switch $kernel_name
         case Darwin
-            os_darwin
+            os_darwin_parse
         case Linux
-            # os_linux
-            os_test
+            # os_linux_parse
+            os_test_parse
         case *
-            os_unsupported
+            os_unsupported_parse
     end
 
     switch $_flag_output

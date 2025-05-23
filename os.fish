@@ -1,9 +1,19 @@
 ## -*- mode: fish -*- ##
 
-function os_darwin
+function os_darwin_requires
     trace (status function) begin
 
-    # there's no command or file that explicitly tells us "Apple"
+    requires_uname
+    requires_sw_vers
+    requires_macos_name
+    requires_uptime
+    requires_gru
+end
+
+function os_darwin_parse
+    trace (status function) begin
+
+    # weirdly, there's no command or file that explicitly tells us "Apple"
     dict set ATTRS sys.vendor Apple
 
     input_uname
@@ -14,7 +24,27 @@ function os_darwin
 
 end
 
-function os_linux
+function os_linux_requires
+    trace (status function) begin
+    requires_uname
+    requires_virt_what
+    requires_os_release
+
+    # BUG: only do this on physical hardware
+    requires_sys_dmi
+
+    # BUG: only do this on x86_64/amd64 systems
+    requires_cpuinfo_flags
+
+    requires_udevadm_ram
+    requires_lscpu
+    requires_selinux
+    requires_no_salt
+    requires_uptime
+    requires_gru
+end
+
+function os_linux_parse
     trace (status function) begin
 
     # If we get "Linux" as as the kernel name, then by defn the os.name is Linux
@@ -40,14 +70,26 @@ function os_linux
 
 end
 
-function os_test
+function os_test_requires
+    trace (status function) begin
+
+    echo "not implemented"
+
+end
+function os_test_parse
     trace (status function) begin
 
     input_ip_addr_show
 
 end
 
-function os_unsupported
+function os_unsupported_requires
+    trace (status function) begin
+
+    panic "Unsupported OS"
+
+end
+function os_unsupported_parse
     trace (status function) begin
 
     panic "Unsupported OS"
