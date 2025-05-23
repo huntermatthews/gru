@@ -215,3 +215,4 @@ testvercomp 1 1 '>'
 ### Things to look for
 
 - interface number, name, state (up/down) mac address, ipv4 addr, ipv6 address, aliases, mtu
+jq -c -r '.[] |[ .ifname, .operstate, .mtu, .address, .addr_info[].local ]|@text ' < ip-j_addr
